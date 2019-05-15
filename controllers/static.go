@@ -3,7 +3,7 @@ package controllers
 import "tensor_web_application/views"
 
 type Static struct {
-	Home *views.View
+	Home    *views.View
 	Contact *views.View
 }
 

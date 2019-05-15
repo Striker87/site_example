@@ -42,4 +42,3 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Fprint(w, form)
 }
-

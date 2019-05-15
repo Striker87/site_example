@@ -8,14 +8,14 @@ import (
 )
 
 const (
-	LayoutDir = "views/layout/"
+	LayoutDir   = "views/layout/"
 	TemplateDir = "views/"
 	TemplateExt = ".html"
 )
 
 type View struct {
 	Template *template.Template
-	Layout string
+	Layout   string
 }
 
 // render is used to render the views with the predefined layout
@@ -35,7 +35,7 @@ func NewView(layout string, files ...string) *View {
 
 	return &View{
 		Template: t,
-		Layout: layout,
+		Layout:   layout,
 	}
 }
 
