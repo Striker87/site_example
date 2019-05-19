@@ -4,12 +4,16 @@ import (
 	"errors"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var (
-	ErrNotFound  = errors.New("models: resource not found")
-	ErrInvalidID = errors.New("models: ID provided was invalid")
+	ErrNotFound        = errors.New("models: resource not found")
+	ErrInvalidID       = errors.New("models: ID provided was invalid")
+	ErrInvalidPassword = errors.New("models: incorrenct password provided")
 )
+
+const userPwPepper = "secret-random-string"
 
 type UserService struct {
 	db *gorm.DB
@@ -17,8 +21,10 @@ type UserService struct {
 
 type User struct {
 	gorm.Model
-	Name  string
-	Email string `gorm:"not null;unique_index"`
+	Name         string
+	Email        string `gorm:"not null;unique_index"`
+	Password     string `gorm:"-"`
+	PasswordHash string `gorm:"not null"`
 }
 
 func NewUserService(connectionInfo string) (*UserService, error) {
@@ -26,6 +32,7 @@ func NewUserService(connectionInfo string) (*UserService, error) {
 	if err != nil {
 		return nil, err
 	}
+	db.LogMode(true)
 	//defer db.Close()
 	return &UserService{
 		db: db,
@@ -38,6 +45,14 @@ func (us *UserService) Close() error {
 
 // Create the porvided user and backfill data like the ID, CreatedAt, and UpdatedAt fields
 func (us *UserService) Create(user *User) error {
+	pwBytes := []byte(user.Password + userPwPepper)
+	hashedBytes, err := bcrypt.GenerateFromPassword(pwBytes, bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	user.PasswordHash = string(hashedBytes)
+	user.Password = ""
 	return us.db.Create(user).Error
 }
 
@@ -47,9 +62,19 @@ func (us *UserService) Update(user *User) error {
 }
 
 // drops the user table and rebuilds it
-func (us *UserService) DestructiveReset() {
-	us.db.DropTableIfExists(&User{})
-	us.db.AutoMigrate(&User{})
+func (us *UserService) DestructiveReset() error {
+	if err := us.db.DropTableIfExists(&User{}).Error; err != nil {
+		return err
+	}
+	return us.AutoMigrate()
+}
+
+// AutoMigrate will attempt to automatically migrate the users table
+func (us *UserService) AutoMigrate() error {
+	if err := us.db.AutoMigrate(&User{}).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 // ByID will look up the id provided
@@ -69,6 +94,25 @@ func (us *UserService) ByEmail(email string) (*User, error) {
 	db := us.db.Where("email = ?", email)
 	err := first(db, &user)
 	return &user, err
+}
+
+func (us *UserService) Authenticate(email, password string) (*User, error) {
+	foundUser, err := us.ByEmail(email)
+	if err != nil {
+		return nil, err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(foundUser.PasswordHash), []byte(password+userPwPepper))
+	if err != nil {
+		switch err {
+		case bcrypt.ErrMismatchedHashAndPassword:
+			return nil, ErrInvalidPassword
+		default:
+			return nil, err
+		}
+	}
+
+	return foundUser, nil
 }
 
 // Delete will delete the user with the provided ID
