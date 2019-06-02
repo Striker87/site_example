@@ -20,7 +20,7 @@ const (
 	hmacSecretKey = "rewrwer43w453543"
 )
 
-type UserService struct {
+type userService struct {
 	UserDB
 }
 
@@ -28,12 +28,14 @@ type userValidator struct {
 	UserDB
 }
 
-var _ UserDB = &userGorm{}
+var _ UserDB = &userValidator{}
 
 type userGorm struct {
 	db   *gorm.DB
 	hmac hash.HMAC
 }
+
+var _ UserDB = &userGorm{}
 
 type User struct {
 	gorm.Model
@@ -44,6 +46,15 @@ type User struct {
 	Remember     string `gorm:"-"`
 	RememberHash string `gorm:"not null;unique_index"`
 }
+
+// is a set of methods used to manipulate and work with the user model
+type UserService interface {
+	// verify provided email and password are correct
+	Authenticate(email, password string) (*User, error)
+	UserDB
+}
+
+var _ UserService = &userService
 
 type UserDB interface {
 	// methods for querying for single users
@@ -78,13 +89,13 @@ func newUserGorm(connectionInfo string) (*userGorm, error) {
 	}, nil
 }
 
-func NewUserService(connectionInfo string) (*UserService, error) {
+func NewUserService(connectionInfo string) (UserService, error) {
 	ug, err := newUserGorm(connectionInfo)
 	if err != nil {
 		return nil, err
 	}
 
-	return &UserService{
+	return &userService{
 		UserDB: &userValidator{
 			UserDB: ug,
 		},
@@ -174,7 +185,7 @@ func (ug *userGorm) ByEmail(email string) (*User, error) {
 	return &user, err
 }
 
-func (us *UserService) Authenticate(email, password string) (*User, error) {
+func (us *userService) Authenticate(email, password string) (*User, error) {
 	foundUser, err := us.ByEmail(email)
 	if err != nil {
 		return nil, err
