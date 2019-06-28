@@ -28,6 +28,8 @@ type userValidator struct {
 	UserDB
 }
 
+var _ UserService = &userService{}
+
 var _ UserDB = &userValidator{}
 
 type userGorm struct {
@@ -54,8 +56,6 @@ type UserService interface {
 	UserDB
 }
 
-var _ UserService = &userService
-
 type UserDB interface {
 	// methods for querying for single users
 	ByID(id uint) (*User, error)
@@ -72,7 +72,14 @@ type UserDB interface {
 
 	// Migrations helpers
 	AutoMigrate() error
-	DesctructiveReset() error
+	//DesctructiveReset() error
+}
+
+func (ug *userGorm) ByID(id uint) (*User, error) {
+	var user User
+	db := ug.db.Where("id = ?", id)
+	err := first(db, &user)
+	return &user, err
 }
 
 func newUserGorm(connectionInfo string) (*userGorm, error) {
@@ -146,7 +153,6 @@ func (ug *userGorm) ByRemember(token string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return &user, nil
 }
 
@@ -155,28 +161,23 @@ func (ug *userGorm) DestructiveReset() error {
 	if err := ug.db.DropTableIfExists(&User{}).Error; err != nil {
 		return err
 	}
-	return ug.AutoMigrate()
+	return ug.AutoMigrate() // error here
 }
 
 // AutoMigrate will attempt to automatically migrate the users table
-func (us *UserService) AutoMigrate() error {
-	if err := us.db.AutoMigrate(&User{}).Error; err != nil {
+func (ug *userGorm) AutoMigrate() error {
+	if err := ug.db.AutoMigrate(&User{}).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
-// ByID will look up the id provided
-// 1 - user, nil
-// 2 - nil, ErrNotFound
-// 3 - nil, otherError
-func (ug *userGorm) ByID(id uint) (*User, error) {
-	var user User
-	db := ug.db.Where("id = ?", id)
-	err := first(db, &user)
-
-	return &user, err
-}
+//func (uv *userValidator) ByID(id uint) (*User, error) {
+//	if id < 1 {
+//		return nil, errors.New("invalid ID")
+//	}
+//	return uv.UserDB.ByID(id)
+//}
 
 func (ug *userGorm) ByEmail(email string) (*User, error) {
 	var user User
@@ -200,7 +201,6 @@ func (us *userService) Authenticate(email, password string) (*User, error) {
 			return nil, err
 		}
 	}
-
 	return foundUser, nil
 }
 
@@ -220,6 +220,5 @@ func first(db *gorm.DB, dst interface{}) error {
 	if err == gorm.ErrRecordNotFound {
 		return ErrNotFound
 	}
-
 	return err
 }
