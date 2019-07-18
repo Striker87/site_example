@@ -1,6 +1,6 @@
 package controllers
 
-import "tensor_web_application/views"
+import "site_example/views"
 
 type Static struct {
 	Home    *views.View

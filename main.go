@@ -5,9 +5,9 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
-	"tensor_web_application/controllers"
-	"tensor_web_application/models"
-	"tensor_web_application/views"
+	"site_example/controllers"
+	"site_example/models"
+	"site_example/views"
 )
 
 var tpl *views.View

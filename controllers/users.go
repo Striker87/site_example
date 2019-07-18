@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"tensor_web_application/models"
-	"tensor_web_application/rand"
-	"tensor_web_application/views"
+	"site_example/models"
+	"site_example/rand"
+	"site_example/views"
 )
 
 type Users struct {
