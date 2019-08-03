@@ -87,10 +87,15 @@ type UserDB interface {
 }
 
 // will hash the remember  token and  then call
-// on the subsequent  UserDB layer
+// on the subsequent UserDB layer
 func (uv *userValidator) ByRemember(token string) (*User, error) {
-	rememberHash := uv.hmac.Hash(token)
-	return uv.UserDB.ByRemember(rememberHash)
+	user := User{
+		Remember: token,
+	}
+	if err := runUserValFuncs(&user, uv.hmacRemember); err != nil {
+		return nil, err
+	}
+	return uv.UserDB.ByRemember(user.RememberHash)
 }
 
 func (ug *userGorm) ByID(id uint) (*User, error) {
@@ -137,19 +142,22 @@ func (ug *userGorm) Create(user *User) error {
 	return ug.db.Create(user).Error
 }
 
-func (uv *userValidator) Create(user *User) error {
-	if err := runUserValFuncs(user, uv.bcryptPassword); err != nil {
+func (uv *userValidator) setRememberIfUnset(user *User) error {
+	if user.Remember != "" {
+		return nil
+	}
+	token, err := rand.RememberToken()
+	if err != nil {
 		return err
 	}
+	user.Remember = token
+	return nil
+}
 
-	if user.Remember == "" {
-		token, err := rand.RememberToken()
-		if err != nil {
-			return err
-		}
-		user.Remember = token
+func (uv *userValidator) Create(user *User) error {
+	if err := runUserValFuncs(user, uv.bcryptPassword, uv.setRememberIfUnset, uv.hmacRemember); err != nil {
+		return err
 	}
-	user.RememberHash = uv.hmac.Hash(user.Remember)
 	return uv.UserDB.Create(user)
 }
 
@@ -159,14 +167,18 @@ func (ug *userGorm) Update(user *User) error {
 
 // update will hash a remember token if is provided.
 func (uv *userValidator) Update(user *User) error {
-	if err := runUserValFuncs(user, uv.bcryptPassword); err != nil {
+	if err := runUserValFuncs(user, uv.bcryptPassword, uv.hmacRemember); err != nil {
 		return err
 	}
-
-	if user.Remember != "" {
-		user.RememberHash = uv.hmac.Hash(user.Remember)
-	}
 	return uv.UserDB.Update(user)
+}
+
+func (uv *userValidator) hmacRemember(user *User) error {
+	if user.Remember == "" {
+		return nil
+	}
+	user.RememberHash = uv.hmac.Hash(user.Remember)
+	return nil
 }
 
 // ByRemember looks up a user with the given remember token and returns that user
@@ -236,10 +248,21 @@ func (ug *userGorm) Delete(id uint) error {
 }
 
 func (uv *userValidator) Delete(id uint) error {
-	if id == 0 {
-		return ErrInvalidID
+	var user User
+	user.ID = id
+	if err := runUserValFuncs(&user, uv.idGreaterThan(0)); err != nil {
+		return err
 	}
 	return uv.UserDB.Delete(id)
+}
+
+func (uv *userValidator) idGreaterThan(n uint) userValFunc {
+	return userValFunc(func(user *User) error {
+		if user.ID <= n {
+			return ErrInvalidID
+		}
+		return nil
+	})
 }
 
 // will hash a users password
