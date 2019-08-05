@@ -54,6 +54,9 @@ func runUserValFuncs(user *User, fns ...userValFunc) error {
 }
 
 func (uv *userValidator) emailFormat(user *User) error {
+	if user.Email == "" {
+		return nil
+	}
 	if !uv.emailRegex.MatchString(user.Email) {
 		return ErrEmailInvalid
 	}
@@ -175,7 +178,7 @@ func (uv *userValidator) setRememberIfUnset(user *User) error {
 }
 
 func (uv *userValidator) Create(user *User) error {
-	if err := runUserValFuncs(user, uv.bcryptPassword, uv.setRememberIfUnset, uv.hmacRemember, uv.normalizeEmail, uv.requireEmail); err != nil {
+	if err := runUserValFuncs(user, uv.bcryptPassword, uv.setRememberIfUnset, uv.hmacRemember, uv.normalizeEmail, uv.requireEmail, uv.emailFormat); err != nil {
 		return err
 	}
 	return uv.UserDB.Create(user)
@@ -187,7 +190,7 @@ func (ug *userGorm) Update(user *User) error {
 
 // update will hash a remember token if is provided.
 func (uv *userValidator) Update(user *User) error {
-	if err := runUserValFuncs(user, uv.bcryptPassword, uv.hmacRemember, uv.normalizeEmail, uv.requireEmail); err != nil {
+	if err := runUserValFuncs(user, uv.bcryptPassword, uv.hmacRemember, uv.normalizeEmail, uv.requireEmail, uv.emailFormat); err != nil {
 		return err
 	}
 	return uv.UserDB.Update(user)
