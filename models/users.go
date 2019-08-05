@@ -7,6 +7,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"site_example/hash"
 	"site_example/rand"
+	"strings"
 )
 
 var (
@@ -155,7 +156,7 @@ func (uv *userValidator) setRememberIfUnset(user *User) error {
 }
 
 func (uv *userValidator) Create(user *User) error {
-	if err := runUserValFuncs(user, uv.bcryptPassword, uv.setRememberIfUnset, uv.hmacRemember); err != nil {
+	if err := runUserValFuncs(user, uv.bcryptPassword, uv.setRememberIfUnset, uv.hmacRemember, uv.normalizeEmail); err != nil {
 		return err
 	}
 	return uv.UserDB.Create(user)
@@ -167,7 +168,7 @@ func (ug *userGorm) Update(user *User) error {
 
 // update will hash a remember token if is provided.
 func (uv *userValidator) Update(user *User) error {
-	if err := runUserValFuncs(user, uv.bcryptPassword, uv.hmacRemember); err != nil {
+	if err := runUserValFuncs(user, uv.bcryptPassword, uv.hmacRemember, uv.normalizeEmail); err != nil {
 		return err
 	}
 	return uv.UserDB.Update(user)
@@ -215,6 +216,23 @@ func (ug *userGorm) AutoMigrate() error {
 //	}
 //	return uv.UserDB.ByID(id)
 //}
+
+func (uv *userValidator) normalizeEmail(user *User) error {
+	user.Email = strings.ToLower(user.Email)
+	user.Email = strings.TrimSpace(user.Email)
+	return nil
+}
+
+// normalize email address before calling ByEmail on the UserDB field
+func (uv *userValidator) ByEmail(email string) (*User, error) {
+	user := User{
+		Email: email,
+	}
+	if err := runUserValFuncs(&user, uv.normalizeEmail); err != nil {
+		return nil, err
+	}
+	return uv.UserDB.ByEmail(user.Email)
+}
 
 func (ug *userGorm) ByEmail(email string) (*User, error) {
 	var user User
