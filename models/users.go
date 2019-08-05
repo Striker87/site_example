@@ -5,6 +5,7 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"golang.org/x/crypto/bcrypt"
+	"regexp"
 	"site_example/hash"
 	"site_example/rand"
 	"strings"
@@ -14,6 +15,8 @@ var (
 	ErrNotFound        = errors.New("models: resource not found")
 	ErrInvalidID       = errors.New("models: ID provided was invalid")
 	ErrInvalidPassword = errors.New("models: incorrenct password provided")
+	ErrEmailRequired   = errors.New("models: email address is required")
+	ErrEmailInvalid    = errors.New("models: email address is not valid")
 )
 
 const (
@@ -27,16 +30,32 @@ type userService struct {
 
 type userValidator struct {
 	UserDB
-	hmac hash.HMAC
+	hmac       hash.HMAC
+	emailRegex *regexp.Regexp
 }
 
 type userValFunc func(*User) error
+
+func newUserValidator(udb UserDB, hmac hash.HMAC) *userValidator {
+	return &userValidator{
+		UserDB:     udb,
+		hmac:       hmac,
+		emailRegex: regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.-]+\.[a-z]{2,16}$`),
+	}
+}
 
 func runUserValFuncs(user *User, fns ...userValFunc) error {
 	for _, fn := range fns {
 		if err := fn(user); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (uv *userValidator) emailFormat(user *User) error {
+	if !uv.emailRegex.MatchString(user.Email) {
+		return ErrEmailInvalid
 	}
 	return nil
 }
@@ -225,7 +244,7 @@ func (uv *userValidator) normalizeEmail(user *User) error {
 
 func (uv *userValidator) requireEmail(user *User) error {
 	if user.Email == "" {
-		return errors.New("emai address is required")
+		return ErrEmailRequired
 	}
 	return nil
 }
