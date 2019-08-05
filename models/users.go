@@ -156,7 +156,7 @@ func (uv *userValidator) setRememberIfUnset(user *User) error {
 }
 
 func (uv *userValidator) Create(user *User) error {
-	if err := runUserValFuncs(user, uv.bcryptPassword, uv.setRememberIfUnset, uv.hmacRemember, uv.normalizeEmail); err != nil {
+	if err := runUserValFuncs(user, uv.bcryptPassword, uv.setRememberIfUnset, uv.hmacRemember, uv.normalizeEmail, uv.requireEmail); err != nil {
 		return err
 	}
 	return uv.UserDB.Create(user)
@@ -168,7 +168,7 @@ func (ug *userGorm) Update(user *User) error {
 
 // update will hash a remember token if is provided.
 func (uv *userValidator) Update(user *User) error {
-	if err := runUserValFuncs(user, uv.bcryptPassword, uv.hmacRemember, uv.normalizeEmail); err != nil {
+	if err := runUserValFuncs(user, uv.bcryptPassword, uv.hmacRemember, uv.normalizeEmail, uv.requireEmail); err != nil {
 		return err
 	}
 	return uv.UserDB.Update(user)
@@ -220,6 +220,13 @@ func (ug *userGorm) AutoMigrate() error {
 func (uv *userValidator) normalizeEmail(user *User) error {
 	user.Email = strings.ToLower(user.Email)
 	user.Email = strings.TrimSpace(user.Email)
+	return nil
+}
+
+func (uv *userValidator) requireEmail(user *User) error {
+	if user.Email == "" {
+		return errors.New("emai address is required")
+	}
 	return nil
 }
 
