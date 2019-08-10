@@ -12,8 +12,8 @@
 <body>
     {{ template "navbar.html" }}
     <div class="container-fluid">
-        {{ template "alert" }}
-        {{ template "yield.html" .User }}
+        {{ template "alert" . }}
+        {{ template "yield.html" . }}
 
         {{ template "footer.html" }}
     </div>
