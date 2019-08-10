@@ -49,11 +49,20 @@ func (u *Users) New(w http.ResponseWriter, r *http.Request) {
 // using when user try to create a user account from HTML form
 // POST /signup
 func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
+	var vd views.Data
 	var form SignupForm
 
 	err := parseForm(r, &form)
 	if err != nil {
 		log.Println(err)
+		vd.Alert = &views.Alert{
+			Level:   views.AlertLvlError,
+			Message: views.AlertMsgGeneric,
+		}
+		if err = u.NewView.Render(w, vd); err != nil {
+			log.Println("error render template:", err)
+		}
+		return
 	}
 
 	user := models.User{
@@ -62,14 +71,19 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 		Password: form.Password,
 	}
 	if err := u.us.Create(&user); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		vd.Alert = &views.Alert{
+			Level:   views.AlertLvlError,
+			Message: err.Error(),
+		}
+		if err = u.NewView.Render(w, vd); err != nil {
+			log.Println("error render template:", err)
+		}
 		return
 	}
-	fmt.Fprint(w, form)
 
 	err = u.signIn(w, &user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
 	http.Redirect(w, r, "/cookietest", http.StatusFound)

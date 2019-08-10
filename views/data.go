@@ -5,6 +5,8 @@ const (
 	AlertLvlWarning = "warning"
 	AlertLvlInfo    = "info"
 	AlertLvlSuccess = "success"
+
+	AlertMsgGeneric = "Something went wrong"
 )
 
 // used to render Bootstrap Alert messages in the templates
