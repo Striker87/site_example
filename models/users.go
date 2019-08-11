@@ -93,10 +93,10 @@ type UserDB interface {
 	Delete(id uint) error
 
 	// Used to close DB connection
-	Close() error
+	//Close() error
 
 	// Migrations helpers
-	AutoMigrate() error
+	//AutoMigrate() error
 	//DesctructiveReset() error
 }
 
@@ -146,10 +146,6 @@ func NewUserService(db *gorm.DB) UserService {
 			UserDB: uv,
 		},
 	}
-}
-
-func (ug *userGorm) Close() error {
-	return ug.db.Close()
 }
 
 // Create the porvided user and backfill data like the ID, CreatedAt, and UpdatedAt fields
@@ -252,22 +248,6 @@ func (ug *userGorm) ByRemember(rememberHash string) (*User, error) {
 		return nil, err
 	}
 	return &user, nil
-}
-
-// drops the user table and rebuilds it
-func (ug *userGorm) DestructiveReset() error {
-	if err := ug.db.DropTableIfExists(&User{}).Error; err != nil {
-		return err
-	}
-	return ug.AutoMigrate() // error here
-}
-
-// AutoMigrate will attempt to automatically migrate the users table
-func (ug *userGorm) AutoMigrate() error {
-	if err := ug.db.AutoMigrate(&User{}).Error; err != nil {
-		return err
-	}
-	return nil
 }
 
 //func (uv *userValidator) ByID(id uint) (*User, error) {
