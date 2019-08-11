@@ -38,6 +38,7 @@ func main() {
 
 	staticC := controllers.NewStatic()
 	usersC := controllers.NewUsers(services.User)
+	galleriesC := controllers.NewGalleries(services.Gallery)
 
 	r := mux.NewRouter()
 	r.Handle("/", staticC.Home).Methods("GET")
@@ -47,6 +48,9 @@ func main() {
 	r.HandleFunc("/signup", usersC.Create).Methods("POST")
 	r.HandleFunc("/login", usersC.Login).Methods("POST")
 	//r.HandleFunc("/cookietest", usersC.CookieTest).Methods("GET")
+
+	// Gallery routes
+	r.Handle("/galleries/new", galleriesC.New).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
