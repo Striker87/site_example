@@ -29,7 +29,10 @@ func (v *View) Render(w http.ResponseWriter, data interface{}) {
 		http.Error(w, "Something went wrong!", http.StatusInternalServerError)
 		return
 	}
-	io.Copy(w, &buf)
+	if _, err := io.Copy(w, &buf); err != nil {
+		log.Println("Copy error:", err)
+		return
+	}
 }
 
 func NewView(layout string, files ...string) *View {
