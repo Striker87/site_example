@@ -1,8 +1,11 @@
 package views
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
+	"io"
+	"log"
 	"net/http"
 	"path/filepath"
 )
@@ -19,8 +22,14 @@ type View struct {
 }
 
 // render is used to render the views with the predefined layout
-func (v *View) Render(w http.ResponseWriter, data interface{}) error {
-	return v.Template.ExecuteTemplate(w, v.Layout, data)
+func (v *View) Render(w http.ResponseWriter, data interface{}) {
+	var buf bytes.Buffer
+	if err := v.Template.ExecuteTemplate(&buf, v.Layout, data); err != nil {
+		log.Println("Render() error:", err)
+		http.Error(w, "Something went wrong!", http.StatusInternalServerError)
+		return
+	}
+	io.Copy(w, &buf)
 }
 
 func NewView(layout string, files ...string) *View {
@@ -48,9 +57,7 @@ func layoutFiles() []string {
 }
 
 func (v *View) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if err := v.Render(w, nil); err != nil {
-		panic(err)
-	}
+	v.Render(w, nil)
 }
 
 // takes in a slice of strings representing file path for templates
