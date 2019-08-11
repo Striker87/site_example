@@ -55,10 +55,7 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 	err := parseForm(r, &form)
 	if err != nil {
 		log.Println(err)
-		vd.Alert = &views.Alert{
-			Level:   views.AlertLvlError,
-			Message: views.AlertMsgGeneric,
-		}
+		vd.SetAlert(err)
 		if err = u.NewView.Render(w, vd); err != nil {
 			log.Println("error render template:", err)
 		}
@@ -71,10 +68,7 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 		Password: form.Password,
 	}
 	if err := u.us.Create(&user); err != nil {
-		vd.Alert = &views.Alert{
-			Level:   views.AlertLvlError,
-			Message: err.Error(),
-		}
+		vd.SetAlert(err)
 		if err = u.NewView.Render(w, vd); err != nil {
 			log.Println("error render template:", err)
 		}

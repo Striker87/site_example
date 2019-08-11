@@ -1,7 +1,6 @@
 package models
 
 import (
-	"errors"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"golang.org/x/crypto/bcrypt"
@@ -9,19 +8,6 @@ import (
 	"site_example/hash"
 	"site_example/rand"
 	"strings"
-)
-
-var (
-	ErrNotFound          = errors.New("models: resource not found")
-	ErrIDInvalid         = errors.New("models: ID provided was invalid")
-	ErrPasswordIncorrect = errors.New("models: incorrect password provided")
-	ErrEmailRequired     = errors.New("models: email address is required")
-	ErrEmailInvalid      = errors.New("models: email address is not valid")
-	ErrEmailTaken        = errors.New("models: email address is already taken")
-	ErrPasswordToShort   = errors.New("models: password at leat must be 8 characters long")
-	ErrPasswordRequired  = errors.New("models: password required")
-	ErrRememberTooShort  = errors.New("models: remember token must be at least 32 bytes")
-	ErrRememberRequired  = errors.New("models: remember is required")
 )
 
 const (
