@@ -29,14 +29,14 @@ const (
 func main() {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
 
-	us, err := models.NewUserService(psqlInfo)
+	services, err := models.NewServices(psqlInfo)
 	must(err)
-	defer us.Close()
-
-	us.AutoMigrate()
+	// TODO: Fix this
+	//defer us.Close()
+	//us.AutoMigrate()
 
 	staticC := controllers.NewStatic()
-	usersC := controllers.NewUsers(us)
+	usersC := controllers.NewUsers(services.User)
 
 	r := mux.NewRouter()
 	r.Handle("/", staticC.Home).Methods("GET")
@@ -45,7 +45,7 @@ func main() {
 	r.Handle("/login", usersC.LoginView).Methods("GET")
 	r.HandleFunc("/signup", usersC.Create).Methods("POST")
 	r.HandleFunc("/login", usersC.Login).Methods("POST")
-	r.HandleFunc("/cookietest", usersC.CookieTest).Methods("GET")
+	//r.HandleFunc("/cookietest", usersC.CookieTest).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
