@@ -90,30 +90,40 @@ type LoginForm struct {
 
 // POST /login
 func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
+	vd := views.Data{}
 	form := LoginForm{}
 	if err := parseForm(r, &form); err != nil {
-		panic(err)
+		log.Println("login parse form error:", err)
+		vd.SetAlert(err)
+		if err = u.LoginView.Render(w, vd); err != nil {
+			log.Println("LoginView.Render error:", err)
+		}
+		return
 	}
 
 	user, err := u.us.Authenticate(form.Email, form.Password)
 	if err != nil {
 		switch err {
 		case models.ErrNotFound:
-			fmt.Fprintln(w, "Invalid email address")
-		case models.ErrPasswordIncorrect:
-			fmt.Fprintln(w, "Invalid password provided")
+			vd.AlertError("Invalid email address")
 		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			vd.SetAlert(err)
+		}
+		if err := u.LoginView.Render(w, vd); err != nil {
+			log.Println("LoginView.Render error:", err)
 		}
 		return
 	}
 
 	err = u.signIn(w, user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		vd.SetAlert(err)
+		if err := u.LoginView.Render(w, vd); err != nil {
+			log.Println("LoginView.Render error:", err)
+		}
 		return
 	}
-	fmt.Fprint(w, user)
+	http.Redirect(w, r, "/cookietest", http.StatusFound)
 }
 
 // CookieTest is used to display cookie set on the current user
