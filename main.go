@@ -51,6 +51,7 @@ func main() {
 
 	// Gallery routes
 	r.Handle("/galleries/new", galleriesC.New).Methods("GET")
+	r.HandleFunc("/galleries", galleriesC.Create).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
