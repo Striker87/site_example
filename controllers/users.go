@@ -138,8 +138,6 @@ func (u *Users) CookieTest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	fmt.Fprintln(w, user)
 }
 
 func (u *Users) signIn(w http.ResponseWriter, user *models.User) error {
