@@ -1,6 +1,8 @@
 package models
 
-import "github.com/jinzhu/gorm"
+import (
+	"github.com/jinzhu/gorm"
+)
 
 // image container resource that visitors view
 type Gallery struct {
@@ -41,4 +43,38 @@ func NewGalleryService(db *gorm.DB) GalleryService {
 			&GalleryGorm{db},
 		},
 	}
+}
+
+func (gv *galleryValidator) Create(gallery *Gallery) error {
+	if err := runGalleryValFuncs(gallery,
+		gv.userIDRequired,
+		gv.titleRequired); err != nil {
+		return err
+	}
+	return gv.GalleryDB.Create(gallery)
+}
+
+type galleryValFunc func(*Gallery) error
+
+func runGalleryValFuncs(gallery *Gallery, fns ...galleryValFunc) error {
+	for _, fn := range fns {
+		if err := fn(gallery); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (gv *galleryValidator) userIDRequired(g *Gallery) error {
+	if g.UserID <= 0 {
+		return ErrUserIDRequired
+	}
+	return nil
+}
+
+func (gv *galleryValidator) titleRequired(g *Gallery) error {
+	if g.Title == "" {
+		return ErrTitleRequired
+	}
+	return nil
 }
