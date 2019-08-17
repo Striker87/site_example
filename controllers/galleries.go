@@ -3,6 +3,7 @@ package controllers
 import (
 	"log"
 	"net/http"
+	"site_example/context"
 	"site_example/models"
 	"site_example/views"
 )
@@ -36,8 +37,14 @@ func (g *Galleries) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user := context.User(r.Context())
+	if user == nil {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
 	gallery := models.Gallery{
-		Title: form.Title,
+		Title:  form.Title,
+		UserID: user.ID,
 	}
 
 	err = g.gs.Create(&gallery)

@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"site_example/context"
 	"site_example/models"
 )
 
@@ -26,6 +27,9 @@ func (mw *RequireUser) ApplyFn(next http.HandlerFunc) http.HandlerFunc {
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
+		ctx := r.Context()
+		ctx = context.WithUser(ctx, user)
+		r = r.WithContext(ctx)
 		next(w, r)
 	})
 }
