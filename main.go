@@ -13,12 +13,6 @@ import (
 
 var tpl *views.View
 
-func must(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
 const (
 	host     = "localhost"
 	port     = 5432
@@ -37,15 +31,15 @@ func main() {
 	//services.DestructiveReset()
 	services.AutoMigrate()
 
+	r := mux.NewRouter()
+
 	staticC := controllers.NewStatic()
 	usersC := controllers.NewUsers(services.User)
-	galleriesC := controllers.NewGalleries(services.Gallery)
-
+	galleriesC := controllers.NewGalleries(services.Gallery, r)
 	requireUserMw := middleware.RequireUser{
 		UserService: services.User,
 	}
 
-	r := mux.NewRouter()
 	r.Handle("/", staticC.Home).Methods("GET")
 	r.Handle("/contact", staticC.Contact).Methods("GET")
 	r.HandleFunc("/signup", usersC.New).Methods("GET")
@@ -57,6 +51,13 @@ func main() {
 	// Gallery routes
 	r.Handle("/galleries/new", requireUserMw.Apply(galleriesC.New)).Methods("GET")
 	r.HandleFunc("/galleries", requireUserMw.ApplyFn(galleriesC.Create)).Methods("POST")
+	r.HandleFunc("/galleries/{:id:[0-9]+}", galleriesC.Show).Methods("GET").Name(controllers.ShowGallery)
 
 	log.Fatal(http.ListenAndServe(":8080", r))
+}
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
