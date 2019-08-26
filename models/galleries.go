@@ -17,6 +17,7 @@ type GalleryService interface {
 
 type GalleryDB interface {
 	ById(id uint) (*Gallery, error)
+	ByUserID(userID uint) ([]Gallery, error)
 	Create(gallery *Gallery) error
 	Update(gallery *Gallery) error
 	Delete(id uint) error
@@ -112,4 +113,11 @@ func (gv *galleryValidator) titleRequired(g *Gallery) error {
 		return ErrTitleRequired
 	}
 	return nil
+}
+
+func (gg *GalleryGorm) ByUserID(userID uint) ([]Gallery, error) {
+	var galleries []Gallery
+	gg.db.Where("user_id = ?", userID).Find(&galleries)
+
+	return galleries, nil
 }
