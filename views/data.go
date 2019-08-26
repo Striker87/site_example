@@ -1,5 +1,7 @@
 package views
 
+import "site_example/models"
+
 const (
 	AlertLvlError   = "danger"
 	AlertLvlWarning = "warning"
@@ -18,6 +20,7 @@ type Alert struct {
 // top level structure that views expect data to come in
 type Data struct {
 	Alert *Alert
+	User  *models.User
 	Yield interface{}
 }
 

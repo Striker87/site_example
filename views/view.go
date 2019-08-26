@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"site_example/context"
 )
 
 const (
@@ -22,9 +23,19 @@ type View struct {
 }
 
 // render is used to render the views with the predefined layout
-func (v *View) Render(w http.ResponseWriter, data interface{}) {
+func (v *View) Render(w http.ResponseWriter, r *http.Request, data interface{}) {
+	var vd Data
+	switch d := data.(type) {
+	case Data:
+		vd = d
+	default:
+		vd = Data{
+			Yield: data,
+		}
+	}
 	var buf bytes.Buffer
-	if err := v.Template.ExecuteTemplate(&buf, v.Layout, data); err != nil {
+	vd.User = context.User(r.Context())
+	if err := v.Template.ExecuteTemplate(&buf, v.Layout, vd); err != nil {
 		log.Println("Render() error:", err)
 		http.Error(w, "Something went wrong!", http.StatusInternalServerError)
 		return
@@ -60,7 +71,7 @@ func layoutFiles() []string {
 }
 
 func (v *View) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	v.Render(w, nil)
+	v.Render(w, r, nil)
 }
 
 // takes in a slice of strings representing file path for templates
